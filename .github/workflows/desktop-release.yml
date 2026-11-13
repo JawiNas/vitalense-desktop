@@ -1,13 +1,14 @@
 # Builds the VitaLense installers for Windows and Mac and puts them on a GitHub release.
 #
-# Push a tag such as v1.2.0 (or publish a release with that new tag on github.com) and,
-# after about 15 minutes, the release has:
+# To release: raise "version" in package.json and push to main. When that version has no
+# release yet, the workflow tags it (for example v1.2.1) and, after about 5 minutes, the release has:
 #   VitaLense-Setup.exe   Windows installer      (the download page links to this name)
 #   VitaLense.dmg         Mac disk image         (the download page links to this name)
 #   VitaLense-mac.zip, latest.yml, latest-mac.yml and *.blockmap   used by automatic updates
+# Pushing a tag such as v1.2.1 yourself, or publishing a release with a new tag on github.com, works too.
 #
-# Every push to main (except README changes), and "Run workflow" on the Actions tab, builds both
-# installers without making a release; download them from the run's summary page to test.
+# When the version is already released, pushes to main (except README changes) and "Run workflow"
+# on the Actions tab only build the installers; download them from the run's summary page to test.
 #
 # Signing is optional. Without certificates the apps still work, but Windows and Mac
 # show a warning the first time (see README.md). Add these repository secrets to sign:
@@ -20,7 +21,7 @@ name: Desktop release
 on:
   push:
     tags: ['v*']
-    branches: [main]          # every change on main is built (no release) so problems show up before a tag
+    branches: [main]          # built every time; released when package.json has a new version
     paths-ignore: ['**.md']
   workflow_dispatch:
 
@@ -107,23 +108,48 @@ jobs:
   release:
     name: Publish the release
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: package.json
+          sparse-checkout-cone-mode: false
+
+      # A tag publishes that tag. On main, the version in package.json is published once:
+      # raising "version" and pushing to main is all it takes to release.
+      - name: Work out the release
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then tag="$GITHUB_REF_NAME"; else tag="v$(jq -r .version package.json)"; fi
+          if gh release view "$tag" > /dev/null 2>&1; then exists=true; else exists=false; fi
+          if [ "$GITHUB_REF_TYPE" = "tag" ] || [ "$exists" = "false" ]; then publish=true; else publish=false; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          if [ "$publish" = "false" ]; then
+            echo "::notice::$tag is already released. Raise \"version\" in package.json to publish a new release."
+          fi
+
       - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+        if: steps.rel.outputs.publish == 'true'
         with:
           path: out
           merge-multiple: true
 
       - name: Upload the installers
+        if: steps.rel.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          TAG: ${{ github.ref_name }}
+          TAG: ${{ steps.rel.outputs.tag }}
         run: |
           ls -la out
           if gh release view "$TAG" > /dev/null 2>&1; then
             gh release upload "$TAG" out/* --clobber
           else
-            gh release create "$TAG" out/* --title "VitaLense ${TAG#v}" --generate-notes
+            gh release create "$TAG" out/* --target "$GITHUB_SHA" --title "VitaLense ${TAG#v}" --generate-notes
           fi

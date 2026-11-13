@@ -2,10 +2,12 @@
 
 This folder turns the VitaLense website into installable apps for Windows and Mac. GitHub builds the installers for you, so you don't need a Mac or a Windows PC to make them.
 
-After the steps below, the **Get the app** page in VitaLense links straight to:
+Downloads (always the newest version):
 
-- `VitaLense-Setup.exe` for Windows 10 and 11 (64-bit)
-- `VitaLense.dmg` for Mac (one file for Apple Silicon and Intel Macs)
+- Windows 10 and 11 (64-bit): https://github.com/JawiNas/vitalense-desktop/releases/latest/download/VitaLense-Setup.exe
+- Mac, Apple Silicon and Intel: https://github.com/JawiNas/vitalense-desktop/releases/latest/download/VitaLense.dmg
+
+The **Get the app** page on the website (vitalense.vercel.app/#/download) links to these.
 
 | File or folder | What it is |
 | --- | --- |
@@ -16,38 +18,21 @@ After the steps below, the **Get the app** page in VitaLense links straight to:
 | `.github/workflows/desktop-release.yml` | The GitHub job that builds and publishes the installers |
 | `scripts/copy-web.mjs` | Copies a new website build into `www/` |
 
-## 1. Put this folder on GitHub (once)
+## 1. How releases work
 
-1. On github.com create a new repository, for example `vitalense-desktop`. Make it **Public**. Visitors download the installers from this repository's releases, and files in a private repository's releases need a GitHub sign-in.
-2. Upload everything in this folder, including the hidden `.github` folder.
-   - **Git** (in a terminal, inside this folder):
-     ```
-     git init -b main
-     git add .
-     git commit -m "VitaLense desktop 1.2.0"
-     git remote add origin https://github.com/JawiNas/vitalense-desktop.git
-     git push -u origin main
-     ```
-   - **GitHub Desktop:** File → Add local repository → choose this folder → Publish repository, and untick "Keep this code private".
-   - **Upload in the browser:** dragging files in can leave out the hidden `.github` folder. If the Actions tab shows no "Desktop release" workflow afterwards, choose **Add file → Create new file**, type `.github/workflows/desktop-release.yml` as the name, paste in that file's contents and commit.
-3. Open the repository's **Actions** tab. If GitHub asks, allow workflows to run.
+Every push to `main` builds both installers on GitHub Actions (about 5 minutes). When `"version"` in `package.json` has no release yet, the same run tags it (for example `v1.2.1`) and publishes a release with `VitaLense-Setup.exe`, `VitaLense.dmg` and the update files. When the version is already released, the run only builds; the installers are on the run's page under **Artifacts** for testing.
 
-## 2. Publish a release
+You can also push a tag such as `v1.2.1` yourself, or use **Releases → Draft a new release** with a new tag; both publish that tag.
 
-1. Check that `"version"` in `package.json` is the version you want to publish (`1.2.0` now).
-2. Create a tag with the same number and a `v` in front:
-   - **Git:** `git tag v1.2.0` then `git push origin v1.2.0`
-   - **Browser:** **Releases → Draft a new release → Choose a tag**, type `v1.2.0`, choose **Create new tag**, then **Publish release**.
-3. The **Actions** tab shows "Desktop release" running. It takes about 10–20 minutes.
-4. When it's green, the release has `VitaLense-Setup.exe`, `VitaLense.dmg` and the update files. These links now work, and keep working for every later version:
-   - `https://github.com/JawiNas/vitalense-desktop/releases/latest/download/VitaLense-Setup.exe`
-   - `https://github.com/JawiNas/vitalense-desktop/releases/latest/download/VitaLense.dmg`
+## 2. Publish a new version
 
-To test a build without publishing anything, open **Actions → Desktop release → Run workflow**. The installers appear at the bottom of that run's page under **Artifacts**.
+1. Raise `"version"` in `package.json`, for example from `1.2.0` to `1.2.1`. To include a new website build, first run `npm run web -- ../vitalense-web` (step 6).
+2. Commit and push to `main` (or edit `package.json` on github.com and commit there).
+3. The **Actions** tab shows "Desktop release" running. When it's green, the download links above serve the new version and installed apps offer the update.
 
-## 3. Turn on the download buttons in the website
+## 3. Download buttons in the website
 
-In the website's `index.html`, near the top, find `window.VL_LINKS` and fill in what you have:
+The website's `index.html` (repository `JawiNas/VitaLense`) and `www/index.html` here both contain this line near the top. `github` is already set; add the store pages when the phone apps are live:
 
 ```js
 window.VL_LINKS = {
@@ -58,7 +43,7 @@ window.VL_LINKS = {
 };
 ```
 
-Commit the change and Vercel redeploys the site. Until a link is filled in, Windows and Mac offer installing from the browser instead, and Android and iPhone show "Coming soon" with the Add to Home Screen steps.
+Commit the change and Vercel redeploys the site. Until a store link is filled in, Android and iPhone show "Coming soon" with the Add to Home Screen steps.
 
 ## 4. What people see the first time (unsigned apps)
 
@@ -98,9 +83,9 @@ The installed app checks your latest GitHub release when it starts. When there's
 
 To ship a new version:
 
-1. Unzip the new website build somewhere, then in this folder run `npm install` (once) and `npm run web -- ../vitalense-web` (the path to the unzipped website folder). This copies it into `www/`.
+1. Unzip the new website build somewhere, then in this folder run `npm install` (once) and `npm run web -- ../vitalense-web` (the path to the unzipped website folder). This copies it into `www/`. Keep the `VL_LINKS` line in `www/index.html`.
 2. Raise `"version"` in `package.json`, for example to `1.2.1`.
-3. Commit, push, and tag `v1.2.1` as in step 2.
+3. Commit and push to `main`; the release is published automatically (step 2).
 
 ## 7. Try it on your own computer (optional)
 
