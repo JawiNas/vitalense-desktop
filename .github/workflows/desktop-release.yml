@@ -6,8 +6,8 @@
 #   VitaLense.dmg         Mac disk image         (the download page links to this name)
 #   VitaLense-mac.zip, latest.yml, latest-mac.yml and *.blockmap   used by automatic updates
 #
-# "Run workflow" on the Actions tab builds both installers without making a release;
-# you can download them from the run's summary page to test.
+# Every push to main (except README changes), and "Run workflow" on the Actions tab, builds both
+# installers without making a release; download them from the run's summary page to test.
 #
 # Signing is optional. Without certificates the apps still work, but Windows and Mac
 # show a warning the first time (see README.md). Add these repository secrets to sign:
@@ -20,6 +20,8 @@ name: Desktop release
 on:
   push:
     tags: ['v*']
+    branches: [main]          # every change on main is built (no release) so problems show up before a tag
+    paths-ignore: ['**.md']
   workflow_dispatch:
 
 permissions:
