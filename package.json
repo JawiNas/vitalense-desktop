@@ -1,0 +1,57 @@
+{
+  "name": "vitalense-desktop",
+  "productName": "VitaLense",
+  "version": "1.2.0",
+  "description": "VitaLense for Windows and Mac: body scans, diet and workout plans, gym log and animated workouts.",
+  "author": "Infrability",
+  "license": "UNLICENSED",
+  "private": true,
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "web": "node scripts/copy-web.mjs",
+    "dist:win": "electron-builder --win --publish never",
+    "dist:mac": "electron-builder --mac --publish never",
+    "dist:dir": "electron-builder --dir --publish never"
+  },
+  "dependencies": {
+    "electron-updater": "6.8.11"
+  },
+  "devDependencies": {
+    "electron": "45.3.1",
+    "electron-builder": "26.18.0"
+  },
+  "build": {
+    "appId": "com.vitalense.app",
+    "productName": "VitaLense",
+    "copyright": "© 2026 Infrability",
+    "directories": { "output": "dist", "buildResources": "build" },
+    "files": ["main.js", "package.json", "build/icon.png", "www/**/*"],
+    "asar": true,
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "artifactName": "VitaLense-Setup.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "VitaLense",
+      "deleteAppDataOnUninstall": false
+    },
+    "mac": {
+      "target": [
+        { "target": "dmg", "arch": ["universal"] },
+        { "target": "zip", "arch": ["universal"] }
+      ],
+      "category": "public.app-category.healthcare-fitness",
+      "artifactName": "VitaLense-mac.${ext}",
+      "hardenedRuntime": true,
+      "darkModeSupport": true
+    },
+    "dmg": { "artifactName": "VitaLense.dmg", "title": "VitaLense" },
+    "linux": { "target": ["AppImage"], "category": "Utility", "artifactName": "VitaLense.${ext}" },
+    "publish": [{ "provider": "github", "releaseType": "release" }]
+  }
+}
